@@ -1,24 +1,80 @@
-# 🧠 Campus Copilot – Your Personal College Assistant
+// Campus Copilot Backend (Without Firebase)
 
-A smart assistant to help students stay updated on classes, deadlines, college events, and notices – all in one place. Built using Node.js (Express) and plain HTML/CSS/JS for a simple frontend.
+// STEP 1: Dependencies
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+const path = require("path");
 
-## 🚀 Features
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
-- Add, view, and delete class or event reminders
-- JSON-based data store (no Firebase)
-- Calendar-friendly input format
-- Easy to expand with calendar integrations and email reminders
+// STEP 2: Use JSON file as a simple database (for demo purposes)
+const DATA_FILE = path.join(__dirname, "events.json");
 
-## 📦 Tech Stack
+// Load or initialize data
+let db = { users: {} };
+if (fs.existsSync(DATA_FILE)) {
+  db = JSON.parse(fs.readFileSync(DATA_FILE));
+}
 
-- **Backend**: Node.js + Express
-- **Frontend**: Vanilla HTML + JavaScript
-- **Database**: Local JSON file
+function saveDB() {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+}
 
-## 🛠️ Setup Instructions
+// STEP 3: API Endpoints
 
-### 1. Clone the Repository
+// Add event
+app.post("/addevent", (req, res) => {
+  const { userId, title, date, time } = req.body;
+  if (!userId || !title || !date || !time) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
 
-```bash
-git clone https://github.com/your-username/campus-copilot.git
-cd campus-copilot/backend
+  if (!db.users[userId]) db.users[userId] = [];
+
+  const event = {
+    id: Date.now().toString(),
+    title,
+    date,
+    time,
+    reminderSent: false
+  };
+
+  db.users[userId].push(event);
+  saveDB();
+
+  res.status(200).json({ message: "Event added", event });
+});
+
+// Get events for a user
+app.get("/getevents/:userId", (req, res) => {
+  const userId = req.params.userId;
+  const events = db.users[userId] || [];
+  res.status(200).json(events);
+});
+
+// Delete an event
+app.delete("/deleteevent/:userId/:eventId", (req, res) => {
+  const { userId, eventId } = req.params;
+
+  if (!db.users[userId]) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  db.users[userId] = db.users[userId].filter(event => event.id !== eventId);
+  saveDB();
+
+  res.status(200).json({ message: "Event deleted" });
+});
+
+// STEP 4: Serve Frontend HTML
+app.use(express.static(path.join(__dirname, "frontend")));
+
+// STEP 5: Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Campus Copilot backend running on port ${PORT}`);
+});

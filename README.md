@@ -1,7 +1,6 @@
 
-  // Campus Copilot Backend (Without Firebase)
+// Campus Copilot Backend (Without Firebase)
 
-// STEP 1: Dependencies
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -12,10 +11,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// STEP 2: Use JSON file as a simple database (for demo purposes)
 const DATA_FILE = path.join(__dirname, "events.json");
 
-// Load or initialize data
 let db = { users: {} };
 if (fs.existsSync(DATA_FILE)) {
   db = JSON.parse(fs.readFileSync(DATA_FILE));
@@ -25,9 +22,6 @@ function saveDB() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
-// STEP 3: API Endpoints
-
-// Add event
 app.post("/addevent", (req, res) => {
   const { userId, title, date, time } = req.body;
   if (!userId || !title || !date || !time) {
@@ -50,14 +44,12 @@ app.post("/addevent", (req, res) => {
   res.status(200).json({ message: "Event added", event });
 });
 
-// Get events for a user
 app.get("/getevents/:userId", (req, res) => {
   const userId = req.params.userId;
   const events = db.users[userId] || [];
   res.status(200).json(events);
 });
 
-// Delete an event
 app.delete("/deleteevent/:userId/:eventId", (req, res) => {
   const { userId, eventId } = req.params;
 
@@ -71,11 +63,10 @@ app.delete("/deleteevent/:userId/:eventId", (req, res) => {
   res.status(200).json({ message: "Event deleted" });
 });
 
-// STEP 4: Serve Frontend HTML
 app.use(express.static(path.join(__dirname, "frontend")));
 
-// STEP 5: Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Campus Copilot backend running on port ${PORT}`);
 });
+
